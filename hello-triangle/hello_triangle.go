@@ -4,9 +4,9 @@ package main
 Adapted from this tutorial: http://www.learnopengl.com/#!Getting-started/Hello-Triangle
 */
 
-import(
-	"runtime"
+import (
 	"log"
+	"runtime"
 	"unsafe"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
@@ -70,7 +70,70 @@ void main()
 }
 `
 
-func programLoop(window *glfw.Window) {
+type getGlParam func(uint32, uint32, *int32)
+type getInfoLog func(uint32, int32, *int32, *uint8)
+
+func checkGlError(glObject uint32, errorParam uint32, getParamFn getGlParam,
+	getInfoLogFn getInfoLog, failMsg string) {
+
+	var success int32
+	getParamFn(glObject, errorParam, &success)
+	if success != 1 {
+		var infoLog [512]byte
+		getInfoLogFn(glObject, 512, nil, (*uint8)(unsafe.Pointer(&infoLog)))
+		log.Fatalln(failMsg, "\n", string(infoLog[:512]))
+	}
+}
+
+func checkShaderCompileErrors(shader uint32) {
+	checkGlError(shader, gl.COMPILE_STATUS, gl.GetShaderiv, gl.GetShaderInfoLog,
+		"ERROR::SHADER::COMPILE_FAILURE")
+}
+
+func checkProgramLinkErrors(program uint32) {
+	checkGlError(program, gl.LINK_STATUS, gl.GetProgramiv, gl.GetProgramInfoLog,
+		"ERROR::PROGRAM::LINKING_FAILURE")
+}
+
+func compileShaders() []uint32 {
+	// create the vertex shader
+	vertexShader := gl.CreateShader(gl.VERTEX_SHADER)
+	gl.ShaderSource(vertexShader, 1, (**uint8)(unsafe.Pointer(&vertexShaderSource)), nil)
+	gl.CompileShader(vertexShader)
+	checkShaderCompileErrors(vertexShader)
+
+	// create the fragment shader
+	fragmentShader := gl.CreateShader(gl.FRAGMENT_SHADER)
+	gl.ShaderSource(fragmentShader, 1, (**uint8)(unsafe.Pointer(&fragmentShaderSource)), nil)
+	gl.CompileShader(fragmentShader)
+	checkShaderCompileErrors(fragmentShader)
+
+	return []uint32{vertexShader, fragmentShader}
+}
+
+/*
+ * Link the provided shaders in the order they were given and return the linked program.
+ */
+func linkShaders(shaders []uint32) uint32 {
+	program := gl.CreateProgram()
+	for _, shader := range shaders {
+		gl.AttachShader(program, shader)
+	}
+	gl.LinkProgram(program)
+	checkProgramLinkErrors(program)
+
+	// shader objects are not needed after they are linked into a program object
+	for _, shader := range shaders {
+		gl.DeleteShader(shader)
+	}
+
+	return program
+}
+
+/*
+ * Creates the Vertex Array Object for a triangle.
+ */
+func createTriangleVAO() uint32 {
 	vertices := [9]float32{
 		-0.5, -0.5, 0.0,
 		0.5, -0.5, 0.0,
@@ -85,56 +148,10 @@ func programLoop(window *glfw.Window) {
 
 	// Bind the Vertex Array Object first, then bind and set vertex buffer(s) and attribute pointers()
 	gl.BindVertexArray(VAO)
-	gl.BindBuffer(gl.ARRAY_BUFFER, VBO)
 
 	// copy vertices data into the buffer "gl.ARRAY_BUFFER"
+	gl.BindBuffer(gl.ARRAY_BUFFER, VBO)
 	gl.BufferData(gl.ARRAY_BUFFER, int(unsafe.Sizeof(vertices)), unsafe.Pointer(&vertices), gl.STATIC_DRAW)
-
-	// create the vertex shader
-	var vertexShader uint32
-	vertexShader = gl.CreateShader(gl.VERTEX_SHADER)
-
-	gl.ShaderSource(vertexShader, 1, (**uint8)(unsafe.Pointer(&vertexShaderSource)), nil)
-	gl.CompileShader(vertexShader)
-
-	var success int32
-	gl.GetShaderiv(vertexShader, gl.COMPILE_STATUS, &success)
-	if success != 1 {
-		var infoLog [512]byte
-		gl.GetShaderInfoLog(vertexShader, 512, nil, (*uint8)(unsafe.Pointer(&infoLog)))
-		log.Fatalln("ERROR::SHADER::VERTEX::COMPILATION_FAILED\n", string(infoLog[:512]))
-	}
-
-	// create the fragment shader
-	var fragmentShader uint32 = gl.CreateShader(gl.FRAGMENT_SHADER)
-	gl.ShaderSource(fragmentShader, 1, (**uint8)(unsafe.Pointer(&fragmentShaderSource)), nil)
-	gl.CompileShader(fragmentShader)
-
-	gl.GetShaderiv(fragmentShader, gl.COMPILE_STATUS, &success)
-	if success != 1 {
-		var infoLog [512]byte
-		gl.GetShaderInfoLog(fragmentShader, 512, nil, (*uint8)(unsafe.Pointer(&infoLog)))
-		log.Fatalln("ERROR::SHADER::VERTEX::COMPILATION_FAILED\n", string(infoLog[:512]))
-	}
-
-	// create the shader program that links the shaders together
-	var shaderProgram uint32 = gl.CreateProgram()
-	gl.AttachShader(shaderProgram, vertexShader)
-	gl.AttachShader(shaderProgram, fragmentShader)
-	gl.LinkProgram(shaderProgram)
-
-	gl.GetProgramiv(shaderProgram, gl.LINK_STATUS, &success)
-	if success != 1 {
-		var infoLog [512]byte
-		gl.GetProgramInfoLog(shaderProgram, 512, nil, (*uint8)(unsafe.Pointer(&infoLog)))
-		log.Fatalln("ERROR::PROGRAM::LINKING_FAILED\n", string(infoLog[:512]))
-	}
-
-	// shader objects are not needed after they are linked into a program object
-	gl.DeleteShader(vertexShader)
-	gl.DeleteShader(fragmentShader)
-
-	gl.UseProgram(shaderProgram)
 
 	// specify the format of our vertex input
 	// input 0
@@ -146,11 +163,20 @@ func programLoop(window *glfw.Window) {
 	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 3*4, gl.PtrOffset(0))
 	gl.EnableVertexAttribArray(0)
 
-	gl.BindBuffer(gl.ARRAY_BUFFER, 0)
-
 	// unbind the VAO (safe practice so we don't accidentally (mis)configure it later)
 	gl.BindVertexArray(0)
 
+	return VAO
+}
+
+func programLoop(window *glfw.Window) {
+
+	// the linked shader program determines how the data will be rendered
+	shaders := compileShaders()
+	shaderProgram := linkShaders(shaders)
+
+	// VAO contains all the information about the data to be rendered
+	VAO := createTriangleVAO()
 
 	for !window.ShouldClose() {
 		// poll events and call their registered callbacks
@@ -160,12 +186,11 @@ func programLoop(window *glfw.Window) {
 		gl.ClearColor(0.2, 0.5, 0.5, 1.0)
 		gl.Clear(gl.COLOR_BUFFER_BIT)
 
-
 		// draw loop
-		gl.UseProgram(shaderProgram)
-		gl.BindVertexArray(VAO)
-		gl.DrawArrays(gl.TRIANGLES, 0, 3)
-		gl.BindVertexArray(0)
+		gl.UseProgram(shaderProgram)        // ensure the right shader program is being used
+		gl.BindVertexArray(VAO)             // bind data
+		gl.DrawArrays(gl.TRIANGLES, 0, 3)   // perform draw call
+		gl.BindVertexArray(0)               // unbind data
 		// end of draw loop
 
 		// swap in the rendered buffer
