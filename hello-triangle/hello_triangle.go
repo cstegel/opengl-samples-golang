@@ -149,12 +149,12 @@ func createTriangleVAO() uint32 {
 	// Bind the Vertex Array Object first, then bind and set vertex buffer(s) and attribute pointers()
 	gl.BindVertexArray(VAO)
 
-	// copy vertices data into the buffer "gl.ARRAY_BUFFER"
+	// copy vertices data into VBO (it needs to be bound first)
 	gl.BindBuffer(gl.ARRAY_BUFFER, VBO)
 	gl.BufferData(gl.ARRAY_BUFFER, int(unsafe.Sizeof(vertices)), unsafe.Pointer(&vertices), gl.STATIC_DRAW)
 
 	// specify the format of our vertex input
-	// input 0
+	// (shader) input 0
 	// vertex has size 3
 	// vertex items are of type FLOAT
 	// do not normalize (already done)
@@ -190,7 +190,7 @@ func programLoop(window *glfw.Window) {
 		gl.UseProgram(shaderProgram)        // ensure the right shader program is being used
 		gl.BindVertexArray(VAO)             // bind data
 		gl.DrawArrays(gl.TRIANGLES, 0, 3)   // perform draw call
-		gl.BindVertexArray(0)               // unbind data
+		gl.BindVertexArray(0)               // unbind data (so we don't mistakenly use/modify it)
 		// end of draw loop
 
 		// swap in the rendered buffer
@@ -198,7 +198,9 @@ func programLoop(window *glfw.Window) {
 	}
 }
 
-func keyCallback(window *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
+func keyCallback(window *glfw.Window, key glfw.Key, scancode int, action glfw.Action,
+	mods glfw.ModifierKey) {
+
 	// When a user presses the escape key, we set the WindowShouldClose property to true,
 	// which closes the application
 	if key == glfw.KeyEscape && action == glfw.Press {
