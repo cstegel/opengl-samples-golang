@@ -96,15 +96,18 @@ func checkProgramLinkErrors(program uint32) {
 }
 
 func compileShaders() []uint32 {
+
 	// create the vertex shader
 	vertexShader := gl.CreateShader(gl.VERTEX_SHADER)
-	gl.ShaderSource(vertexShader, 1, (**uint8)(unsafe.Pointer(&vertexShaderSource)), nil)
+	shaderSourceChars := gl.Str(vertexShaderSource + "\x00")
+	gl.ShaderSource(vertexShader, 1, &shaderSourceChars, nil)
 	gl.CompileShader(vertexShader)
 	checkShaderCompileErrors(vertexShader)
 
 	// create the fragment shader
 	fragmentShader := gl.CreateShader(gl.FRAGMENT_SHADER)
-	gl.ShaderSource(fragmentShader, 1, (**uint8)(unsafe.Pointer(&fragmentShaderSource)), nil)
+	shaderSourceChars = gl.Str(fragmentShaderSource + "\x00")
+	gl.ShaderSource(fragmentShader, 1, &shaderSourceChars, nil)
 	gl.CompileShader(fragmentShader)
 	checkShaderCompileErrors(fragmentShader)
 
@@ -134,7 +137,7 @@ func linkShaders(shaders []uint32) uint32 {
  * Creates the Vertex Array Object for a triangle.
  */
 func createTriangleVAO() uint32 {
-	vertices := [9]float32{
+	vertices := []float32{
 		-0.5, -0.5, 0.0,
 		0.5, -0.5, 0.0,
 		0.0, 0.5, 0.0,
@@ -151,7 +154,7 @@ func createTriangleVAO() uint32 {
 
 	// copy vertices data into VBO (it needs to be bound first)
 	gl.BindBuffer(gl.ARRAY_BUFFER, VBO)
-	gl.BufferData(gl.ARRAY_BUFFER, int(unsafe.Sizeof(vertices)), unsafe.Pointer(&vertices), gl.STATIC_DRAW)
+	gl.BufferData(gl.ARRAY_BUFFER, len(vertices)*4, gl.Ptr(vertices), gl.STATIC_DRAW)
 
 	// specify the format of our vertex input
 	// (shader) input 0
