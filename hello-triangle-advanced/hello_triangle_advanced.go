@@ -108,7 +108,8 @@ func checkProgramLinkErrors(program uint32) {
 
 func compileShader(shaderCode string, shaderType uint32) uint32 {
 	shader := gl.CreateShader(shaderType)
-	gl.ShaderSource(shader, 1, (**uint8)(unsafe.Pointer(&shaderCode)), nil)
+	shaderChars := gl.Str(shaderCode + "\x00")
+	gl.ShaderSource(shader, 1, &shaderChars, nil)
 	gl.CompileShader(shader)
 	checkShaderCompileErrors(shader)
 	return shader
@@ -132,14 +133,6 @@ func linkShaders(shaders []uint32) uint32 {
  * Creates the Vertex Array Object for a triangle.
  */
 func createTriangleVAO(vertices []float32, indices []uint32) uint32 {
-	if len(vertices) > 256 || len(indices) > 256 {
-		panic("slices are too big!")
-	}
-	verticesArray := [256]float32{}
-	copy(verticesArray[:], vertices)
-
-	indicesArray := [256]uint32{}
-	copy(indicesArray[:], indices)
 
 	var VAO uint32
 	gl.GenVertexArrays(1, &VAO)
@@ -155,11 +148,11 @@ func createTriangleVAO(vertices []float32, indices []uint32) uint32 {
 
 	// copy vertices data into VBO (it needs to be bound first)
 	gl.BindBuffer(gl.ARRAY_BUFFER, VBO)
-	gl.BufferData(gl.ARRAY_BUFFER, int(unsafe.Sizeof(verticesArray)), unsafe.Pointer(&verticesArray), gl.STATIC_DRAW)
+	gl.BufferData(gl.ARRAY_BUFFER, len(vertices)*4, gl.Ptr(vertices), gl.STATIC_DRAW)
 
 	// copy indices into element buffer
 	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, EBO)
-	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, int(unsafe.Sizeof(indicesArray)), unsafe.Pointer(&indicesArray), gl.STATIC_DRAW)
+	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(indices)*4, gl.Ptr(indices), gl.STATIC_DRAW)
 
 	// specify the format of our vertex input
 	// (shader) input 0
