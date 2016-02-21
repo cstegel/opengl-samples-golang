@@ -49,7 +49,10 @@ func main() {
 
 	window.SetKeyCallback(keyCallback)
 
-	programLoop(window)
+	err = programLoop(window)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 /*
@@ -91,17 +94,37 @@ func createTriangleVAO(vertices []float32, indices []uint32) uint32 {
 	return VAO
 }
 
-func programLoop(window *glfw.Window) {
+func programLoop(window *glfw.Window) error {
 
 	// the linked shader program determines how the data will be rendered
-	shaderProgram := shader.NewProgram("shaders/basic.vert", "shaders/basic.frag")
-	defer shaderProgram.Close()
+	vertShader, err := gfx.NewShaderFromFile("shaders/basic.vert", gl.VERTEX_SHADER)
+	if err != nil {
+		return err
+	}
+
+	fragShader, err := gfx.NewShaderFromFile("shaders/basic.frag", gl.FRAGMENT_SHADER)
+	if err != nil {
+		return err
+	}
+
+	shaderProgram, err := gfx.NewProgram(vertShader, fragShader)
+	if err != nil {
+		return err
+	}
+	defer shaderProgram.Delete()
 
 	vertices := []float32{
-		// Positions         // Color
-		0.2,   0.6,   0.0,   1.0,  0.0,  0.0, // top
-		0.6,  -0.2,   0.0,   0.0,  1.0,  0.0, // bottom right
-		-0.2, -0.2,   0.0,   0.0,  0.0,  1.0, // bottom left
+		// top
+		0.0, 0.5, 0.0,     // position
+		1.0, 0.0, 0.0,     // Color
+
+		// bottom right
+		0.5, -0.5, 0.0,
+		0.0, 1.0, 0.0,
+
+		// bottom left
+		-0.5, -0.5, 0.0,
+		0.0, 0.0, 1.0,
 	}
 
 	indices := []uint32{
@@ -131,6 +154,8 @@ func programLoop(window *glfw.Window) {
 		// swap in the rendered buffer
 		window.SwapBuffers()
 	}
+
+	return nil
 }
 
 func keyCallback(window *glfw.Window, key glfw.Key, scancode int, action glfw.Action,
