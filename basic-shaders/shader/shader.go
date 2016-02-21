@@ -61,9 +61,9 @@ func compileShader(shaderFile string, shaderType uint32) uint32 {
 	if err != nil {
 		log.Fatal(err)
 	}
-
+	glShaderSource := gl.Str(string(shaderSource) + "\x00")
 	shader := gl.CreateShader(shaderType)
-	gl.ShaderSource(shader, 1, gl.Str(shaderSource), nil)
+	gl.ShaderSource(shader, 1, &glShaderSource, nil)
 	gl.CompileShader(shader)
 	checkShaderCompileErrors(shader, shaderFile)
 	return shader
