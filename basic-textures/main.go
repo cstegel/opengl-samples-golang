@@ -1,9 +1,9 @@
 package main
 
 /*
-Adapted from this tutorial: http://www.learnopengl.com/#!Getting-started/Shaders
+Adapted from this tutorial: http://www.learnopengl.com/#!Getting-started/Textures
 
-Shows how to pass both position and color as inputs to a shader via a VBO
+Shows how to use basic textures in openGL
 */
 
 import (
@@ -14,7 +14,7 @@ import (
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.1/glfw"
 
-	"github.com/opengl-samples-golang/basic-shaders/gfx"
+	"github.com/opengl-samples-golang/basic-textures/gfx"
 )
 
 const windowWidth = 800
@@ -58,7 +58,7 @@ func main() {
 /*
  * Creates the Vertex Array Object for a triangle.
  */
-func createTriangleVAO(vertices []float32, indices []uint32) uint32 {
+func createVAO(vertices []float32, indices []uint32) uint32 {
 
 	var VAO uint32
 	gl.GenVertexArrays(1, &VAO)
@@ -80,13 +80,24 @@ func createTriangleVAO(vertices []float32, indices []uint32) uint32 {
 	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, EBO)
 	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(indices)*4, gl.Ptr(indices), gl.STATIC_DRAW)
 
+	// size of one whole vertex (sum of attrib sizes)
+	var stride int32 = 3*4 + 3*4 + 2*4
+	var offset int = 0
+
 	// position
-	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 6*4, gl.PtrOffset(0))
+	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, stride, gl.PtrOffset(offset))
 	gl.EnableVertexAttribArray(0)
+	offset += 3*4
 
 	// color
-	gl.VertexAttribPointer(1, 3, gl.FLOAT, false, 6*4, gl.PtrOffset(3*4))
+	gl.VertexAttribPointer(1, 3, gl.FLOAT, false, stride, gl.PtrOffset(offset))
 	gl.EnableVertexAttribArray(1)
+	offset += 3*4
+
+	// texture position
+	gl.VertexAttribPointer(2, 2, gl.FLOAT, false, stride, gl.PtrOffset(offset))
+	gl.EnableVertexAttribArray(2)
+	offset += 2*4
 
 	// unbind the VAO (safe practice so we don't accidentally (mis)configure it later)
 	gl.BindVertexArray(0)
@@ -114,40 +125,71 @@ func programLoop(window *glfw.Window) error {
 	defer shaderProgram.Delete()
 
 	vertices := []float32{
-		// top
-		0.0, 0.5, 0.0,     // position
-		1.0, 0.0, 0.0,     // Color
+		// top left
+		-0.75, 0.75, 0.0,   // position
+		1.0, 0.0, 0.0,    // Color
+		1.0, 0.0,         // texture coordinates
+
+		// top right
+		0.75, 0.75, 0.0,
+		0.0, 1.0, 0.0,
+		0.0, 0.0,
 
 		// bottom right
-		0.5, -0.5, 0.0,
-		0.0, 1.0, 0.0,
+		0.75, -0.75, 0.0,
+		0.0, 0.0, 1.0,
+		0.0, 1.0,
 
 		// bottom left
-		-0.5, -0.5, 0.0,
-		0.0, 0.0, 1.0,
+		-0.75, -0.75, 0.0,
+		1.0, 1.0, 1.0,
+		1.0, 1.0,
 	}
 
 	indices := []uint32{
-		0, 1, 2,  // only triangle
+		// rectangle
+		0, 1, 2,  // top triangle
+		0, 2, 3,  // bottom triangle
 	}
 
-	VAO := createTriangleVAO(vertices, indices)
+	VAO := createVAO(vertices, indices)
+	texture0, err := gfx.NewTextureFromFile("../images/RTS_Crate.png",
+	                                        gl.CLAMP_TO_EDGE, gl.CLAMP_TO_EDGE)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	texture1, err := gfx.NewTextureFromFile("../images/trollface.png",
+	                                        gl.CLAMP_TO_EDGE, gl.CLAMP_TO_EDGE)
+	if err != nil {
+		panic(err.Error())
+	}
 
 	for !window.ShouldClose() {
 		// poll events and call their registered callbacks
 		glfw.PollEvents()
 
-		// perform rendering
+		// background color
 		gl.ClearColor(0.2, 0.5, 0.5, 1.0)
 		gl.Clear(gl.COLOR_BUFFER_BIT)
 
-		// draw loop
-
-		// draw triangle
+		// draw vertices
 		shaderProgram.Use()
+
+		// set texture0 to uniform0 in the fragment shader
+		texture0.Bind(gl.TEXTURE0)
+		texture0.SetUniform(shaderProgram.GetUniformLocation("ourTexture0"))
+
+		// set texture1 to uniform1 in the fragment shader
+		texture1.Bind(gl.TEXTURE1)
+		texture1.SetUniform(shaderProgram.GetUniformLocation("ourTexture1"))
+
 		gl.BindVertexArray(VAO)
-		gl.DrawElements(gl.TRIANGLES, 3, gl.UNSIGNED_INT, unsafe.Pointer(nil))
+		gl.DrawElements(gl.TRIANGLES, 6, gl.UNSIGNED_INT, unsafe.Pointer(nil))
 		gl.BindVertexArray(0)
+
+		texture0.UnBind()
+		texture1.UnBind()
 
 		// end of draw loop
 

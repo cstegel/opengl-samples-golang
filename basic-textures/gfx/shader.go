@@ -45,6 +45,10 @@ func (prog *Program) Link() error {
 		"PROGRAM::LINKING_FAILURE")
 }
 
+func (prog *Program) GetUniformLocation(name string) int32 {
+	return gl.GetUniformLocation(prog.handle, gl.Str(name + "\x00"))
+}
+
 func NewProgram(shaders ...*Shader) (*Program, error) {
 	prog := &Program{handle:gl.CreateProgram()}
 	prog.Attach(shaders...)
