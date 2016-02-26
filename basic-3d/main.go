@@ -9,7 +9,6 @@ Shows how to use a basic coordinate system in OpenGL to create 3D objects
 import (
 	"log"
 	"runtime"
-	// "unsafe"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.1/glfw"
@@ -76,10 +75,6 @@ func createVAO(vertices []float32, indices []uint32) uint32 {
 	// copy vertices data into VBO (it needs to be bound first)
 	gl.BindBuffer(gl.ARRAY_BUFFER, VBO)
 	gl.BufferData(gl.ARRAY_BUFFER, len(vertices)*4, gl.Ptr(vertices), gl.STATIC_DRAW)
-
-	// copy indices into element buffer
-	// gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, EBO)
-	// gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(indices)*4, gl.Ptr(indices), gl.STATIC_DRAW)
 
 	// size of one whole vertex (sum of attrib sizes)
 	var stride int32 = 3*4 + 2*4
@@ -174,10 +169,23 @@ func programLoop(window *glfw.Window) error {
 		panic(err.Error())
 	}
 
-	texture1, err := gfx.NewTextureFromFile("../images/trollface.png",
+	texture1, err := gfx.NewTextureFromFile("../images/trollface-transparent.png",
 	                                        gl.CLAMP_TO_EDGE, gl.CLAMP_TO_EDGE)
 	if err != nil {
 		panic(err.Error())
+	}
+
+	cubePositions := [][]float32 {
+		[]float32{ 0.0,  0.0,  -3.0 },
+		[]float32{ 2.0,  5.0, -15.0},
+		[]float32{-1.5, -2.2, -2.5 },
+		[]float32{-3.8, -2.0, -12.3},
+		[]float32{ 2.4, -0.4, -3.5 },
+		[]float32{-1.7,  3.0, -7.5 },
+		[]float32{ 1.3, -2.0, -2.5 },
+		[]float32{ 1.5,  2.0, -2.5 },
+		[]float32{ 1.5,  0.2, -1.5 },
+		[]float32{-1.3,  1.0, -1.5 },
 	}
 
 	gl.Enable(gl.DEPTH_TEST)
@@ -207,19 +215,35 @@ func programLoop(window *glfw.Window) error {
 		rotateX   := (mgl32.Rotate3DX(mgl32.DegToRad(-60 * float32(glfw.GetTime()))))
 		rotateY   := (mgl32.Rotate3DY(mgl32.DegToRad(-60 * float32(glfw.GetTime()))))
 		rotateZ   := (mgl32.Rotate3DZ(mgl32.DegToRad(-60 * float32(glfw.GetTime()))))
-		worldTransform := (rotateX.Mul3(rotateY).Mul3(rotateZ).Mat4())
+
 		viewTransform    := mgl32.Translate3D(0, 0, -3)
 		projectTransform := mgl32.Perspective(mgl32.DegToRad(60), windowWidth/windowHeight, 0.1, 100.0)
 
-		gl.UniformMatrix4fv(program.GetUniformLocation("world"), 1, false,
-		                    &worldTransform[0])
+
 		gl.UniformMatrix4fv(program.GetUniformLocation("view"), 1, false,
 		                    &viewTransform[0])
 		gl.UniformMatrix4fv(program.GetUniformLocation("project"), 1, false,
 		                    &projectTransform[0])
 
+		gl.UniformMatrix4fv(program.GetUniformLocation("worldRotateX"), 1, false,
+		&rotateX[0])
+		gl.UniformMatrix4fv(program.GetUniformLocation("worldRotateY"), 1, false,
+		&rotateY[0])
+		gl.UniformMatrix4fv(program.GetUniformLocation("worldRotateZ"), 1, false,
+		&rotateZ[0])
+
 		gl.BindVertexArray(VAO)
-		gl.DrawArrays(gl.TRIANGLES, 0, 36)
+
+		for _, pos := range cubePositions {
+
+			worldTranslate := mgl32.Translate3D(pos[0], pos[1], pos[2])
+			worldTransform := (worldTranslate.Mul4(rotateX.Mul3(rotateY).Mul3(rotateZ).Mat4()))
+
+			gl.UniformMatrix4fv(program.GetUniformLocation("world"), 1, false,
+			                    &worldTransform[0])
+
+			gl.DrawArrays(gl.TRIANGLES, 0, 36)
+		}
 		// gl.DrawElements(gl.TRIANGLES, 36, gl.UNSIGNED_INT, unsafe.Pointer(nil))
 		gl.BindVertexArray(0)
 
