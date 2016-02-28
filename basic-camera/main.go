@@ -9,6 +9,7 @@ Shows how to create a basic controllable FPS camera
 import (
 	"log"
 	"runtime"
+	"math"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.1/glfw"
@@ -198,44 +199,50 @@ func programLoop(window *glfw.Window) error {
 		gl.ClearColor(0.2, 0.5, 0.5, 1.0)
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
-		// draw vertices
 		program.Use()
 
-		// set texture0 to uniform0 in the fragment shader
+		// bind textures
 		texture0.Bind(gl.TEXTURE0)
 		texture0.SetUniform(program.GetUniformLocation("ourTexture0"))
 
-		// set texture1 to uniform1 in the fragment shader
 		texture1.Bind(gl.TEXTURE1)
 		texture1.SetUniform(program.GetUniformLocation("ourTexture1"))
 
-		// update shader transform matrices
-
-		// Create transformation matrices
+		// cube rotation matrices
 		rotateX   := (mgl32.Rotate3DX(mgl32.DegToRad(-60 * float32(glfw.GetTime()))))
 		rotateY   := (mgl32.Rotate3DY(mgl32.DegToRad(-60 * float32(glfw.GetTime()))))
 		rotateZ   := (mgl32.Rotate3DZ(mgl32.DegToRad(-60 * float32(glfw.GetTime()))))
 
-		cameraTransform  := mgl32.Translate3D(0, 0, -3)
+		// creates perspective
 		projectTransform := mgl32.Perspective(mgl32.DegToRad(60), windowWidth/windowHeight, 0.1, 100.0)
 
 
-		gl.UniformMatrix4fv(program.GetUniformLocation("camera"), 1, false,
-		                    &viewTransform[0])
-		gl.UniformMatrix4fv(program.GetUniformLocation("project"), 1, false,
-		                    &projectTransform[0])
+		// Calculate camera transform matrix for a rotating camera focusing on the origin
+		// x/z are horizontal, y is vertical
+		var cameraRadius float32 = 10.0
+		cameraPos := mgl32.Vec3{
+			cameraRadius*float32(math.Sin(glfw.GetTime())),
+			0,
+			cameraRadius*float32(math.Cos(glfw.GetTime())),
+		}
+		cameraTarget := mgl32.Vec3{0, 0, 0}
 
-		gl.UniformMatrix4fv(program.GetUniformLocation("worldRotateX"), 1, false,
-		&rotateX[0])
-		gl.UniformMatrix4fv(program.GetUniformLocation("worldRotateY"), 1, false,
-		&rotateY[0])
-		gl.UniformMatrix4fv(program.GetUniformLocation("worldRotateZ"), 1, false,
-		&rotateZ[0])
+		up := mgl32.Vec3{0, 1, 0}
+
+		cameraTransform := mgl32.LookAt(
+			cameraPos.X(), cameraPos.Y(), cameraPos.Z(),
+			cameraTarget.X(), cameraTarget.Y(), cameraTarget.Z(),
+			up.X(), up.Y(), up.Z(),
+		)
+
+		gl.UniformMatrix4fv(program.GetUniformLocation("camera"), 1, false, &cameraTransform[0])
+		gl.UniformMatrix4fv(program.GetUniformLocation("project"), 1, false,
+		&projectTransform[0])
 
 		gl.BindVertexArray(VAO)
 
+		// draw each cube after all coordinate system transforms are bound
 		for _, pos := range cubePositions {
-
 			worldTranslate := mgl32.Translate3D(pos[0], pos[1], pos[2])
 			worldTransform := (worldTranslate.Mul4(rotateX.Mul3(rotateY).Mul3(rotateZ).Mat4()))
 
@@ -244,7 +251,7 @@ func programLoop(window *glfw.Window) error {
 
 			gl.DrawArrays(gl.TRIANGLES, 0, 36)
 		}
-		// gl.DrawElements(gl.TRIANGLES, 36, gl.UNSIGNED_INT, unsafe.Pointer(nil))
+
 		gl.BindVertexArray(0)
 
 		texture0.UnBind()

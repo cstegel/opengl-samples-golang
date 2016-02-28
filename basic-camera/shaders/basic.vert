@@ -11,6 +11,6 @@ uniform mat4 project;
 
 void main()
 {
-    gl_Position = project * view * world * vec4(position, 1.0);
+    gl_Position = project * camera * world * vec4(position, 1.0);
     TexCoord = texCoord;    // pass the texture coords on to the fragment shader
 }
