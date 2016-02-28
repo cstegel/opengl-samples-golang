@@ -21,6 +21,65 @@ import (
 const windowWidth = 1280
 const windowHeight = 720
 
+// vertices to draw 6 faces of a cube
+var cubeVertices = []float32{
+	// position        // texture position
+	-0.5, -0.5, -0.5,  0.0, 0.0,
+	 0.5, -0.5, -0.5,  1.0, 0.0,
+	 0.5,  0.5, -0.5,  1.0, 1.0,
+	 0.5,  0.5, -0.5,  1.0, 1.0,
+	-0.5,  0.5, -0.5,  0.0, 1.0,
+	-0.5, -0.5, -0.5,  0.0, 0.0,
+
+	-0.5, -0.5,  0.5,  0.0, 0.0,
+	 0.5, -0.5,  0.5,  1.0, 0.0,
+	 0.5,  0.5,  0.5,  1.0, 1.0,
+	 0.5,  0.5,  0.5,  1.0, 1.0,
+	-0.5,  0.5,  0.5,  0.0, 1.0,
+	-0.5, -0.5,  0.5,  0.0, 0.0,
+
+	-0.5,  0.5,  0.5,  1.0, 0.0,
+	-0.5,  0.5, -0.5,  1.0, 1.0,
+	-0.5, -0.5, -0.5,  0.0, 1.0,
+	-0.5, -0.5, -0.5,  0.0, 1.0,
+	-0.5, -0.5,  0.5,  0.0, 0.0,
+	-0.5,  0.5,  0.5,  1.0, 0.0,
+
+	 0.5,  0.5,  0.5,  1.0, 0.0,
+	 0.5,  0.5, -0.5,  1.0, 1.0,
+	 0.5, -0.5, -0.5,  0.0, 1.0,
+	 0.5, -0.5, -0.5,  0.0, 1.0,
+	 0.5, -0.5,  0.5,  0.0, 0.0,
+	 0.5,  0.5,  0.5,  1.0, 0.0,
+
+	-0.5, -0.5, -0.5,  0.0, 1.0,
+	 0.5, -0.5, -0.5,  1.0, 1.0,
+	 0.5, -0.5,  0.5,  1.0, 0.0,
+	 0.5, -0.5,  0.5,  1.0, 0.0,
+	-0.5, -0.5,  0.5,  0.0, 0.0,
+	-0.5, -0.5, -0.5,  0.0, 1.0,
+
+	-0.5,  0.5, -0.5,  0.0, 1.0,
+	 0.5,  0.5, -0.5,  1.0, 1.0,
+	 0.5,  0.5,  0.5,  1.0, 0.0,
+	 0.5,  0.5,  0.5,  1.0, 0.0,
+	-0.5,  0.5,  0.5,  0.0, 0.0,
+	-0.5,  0.5, -0.5,  0.0, 1.0,
+}
+
+var cubePositions = [][]float32 {
+	{ 0.0,  0.0,  -3.0},
+	{ 2.0,  5.0, -15.0},
+	{-1.5, -2.2, -2.5 },
+	{-3.8, -2.0, -12.3},
+	{ 2.4, -0.4, -3.5 },
+	{-1.7,  3.0, -7.5 },
+	{ 1.3, -2.0, -2.5 },
+	{ 1.5,  2.0, -2.5 },
+	{ 1.5,  0.2, -1.5 },
+	{-1.3,  1.0, -1.5 },
+}
+
 func init() {
 	// GLFW event handling must be run on the main OS thread
 	runtime.LockOSThread()
@@ -58,6 +117,7 @@ func main() {
 
 /*
  * Creates the Vertex Array Object for a triangle.
+ * indices is leftover from earlier samples and not used here.
  */
 func createVAO(vertices []float32, indices []uint32) uint32 {
 
@@ -116,54 +176,7 @@ func programLoop(window *glfw.Window) error {
 	}
 	defer program.Delete()
 
-	vertices := []float32{
-		// position        // texture position
-		-0.5, -0.5, -0.5,  0.0, 0.0,
-		 0.5, -0.5, -0.5,  1.0, 0.0,
-		 0.5,  0.5, -0.5,  1.0, 1.0,
-		 0.5,  0.5, -0.5,  1.0, 1.0,
-		-0.5,  0.5, -0.5,  0.0, 1.0,
-		-0.5, -0.5, -0.5,  0.0, 0.0,
-
-		-0.5, -0.5,  0.5,  0.0, 0.0,
-		 0.5, -0.5,  0.5,  1.0, 0.0,
-		 0.5,  0.5,  0.5,  1.0, 1.0,
-		 0.5,  0.5,  0.5,  1.0, 1.0,
-		-0.5,  0.5,  0.5,  0.0, 1.0,
-		-0.5, -0.5,  0.5,  0.0, 0.0,
-
-		-0.5,  0.5,  0.5,  1.0, 0.0,
-		-0.5,  0.5, -0.5,  1.0, 1.0,
-		-0.5, -0.5, -0.5,  0.0, 1.0,
-		-0.5, -0.5, -0.5,  0.0, 1.0,
-		-0.5, -0.5,  0.5,  0.0, 0.0,
-		-0.5,  0.5,  0.5,  1.0, 0.0,
-
-		 0.5,  0.5,  0.5,  1.0, 0.0,
-		 0.5,  0.5, -0.5,  1.0, 1.0,
-		 0.5, -0.5, -0.5,  0.0, 1.0,
-		 0.5, -0.5, -0.5,  0.0, 1.0,
-		 0.5, -0.5,  0.5,  0.0, 0.0,
-		 0.5,  0.5,  0.5,  1.0, 0.0,
-
-		-0.5, -0.5, -0.5,  0.0, 1.0,
-		 0.5, -0.5, -0.5,  1.0, 1.0,
-		 0.5, -0.5,  0.5,  1.0, 0.0,
-		 0.5, -0.5,  0.5,  1.0, 0.0,
-		-0.5, -0.5,  0.5,  0.0, 0.0,
-		-0.5, -0.5, -0.5,  0.0, 1.0,
-
-		-0.5,  0.5, -0.5,  0.0, 1.0,
-		 0.5,  0.5, -0.5,  1.0, 1.0,
-		 0.5,  0.5,  0.5,  1.0, 0.0,
-		 0.5,  0.5,  0.5,  1.0, 0.0,
-		-0.5,  0.5,  0.5,  0.0, 0.0,
-		-0.5,  0.5, -0.5,  0.0, 1.0,
-	}
-
-	indices := []uint32{}
-
-	VAO := createVAO(vertices, indices)
+	VAO := createVAO(cubeVertices, nil)
 	texture0, err := gfx.NewTextureFromFile("../images/RTS_Crate.png",
 	                                        gl.CLAMP_TO_EDGE, gl.CLAMP_TO_EDGE)
 	if err != nil {
@@ -176,19 +189,7 @@ func programLoop(window *glfw.Window) error {
 		panic(err.Error())
 	}
 
-	cubePositions := [][]float32 {
-		[]float32{ 0.0,  0.0,  -3.0 },
-		[]float32{ 2.0,  5.0, -15.0},
-		[]float32{-1.5, -2.2, -2.5 },
-		[]float32{-3.8, -2.0, -12.3},
-		[]float32{ 2.4, -0.4, -3.5 },
-		[]float32{-1.7,  3.0, -7.5 },
-		[]float32{ 1.3, -2.0, -2.5 },
-		[]float32{ 1.5,  2.0, -2.5 },
-		[]float32{ 1.5,  0.2, -1.5 },
-		[]float32{-1.3,  1.0, -1.5 },
-	}
-
+	// ensure that triangles that are "behind" others do not draw over top of them
 	gl.Enable(gl.DEPTH_TEST)
 
 	for !window.ShouldClose() {
@@ -197,7 +198,7 @@ func programLoop(window *glfw.Window) error {
 
 		// background color
 		gl.ClearColor(0.2, 0.5, 0.5, 1.0)
-		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)  // depth buffer needed for DEPTH_TEST
 
 		program.Use()
 
@@ -214,8 +215,8 @@ func programLoop(window *glfw.Window) error {
 		rotateZ   := (mgl32.Rotate3DZ(mgl32.DegToRad(-60 * float32(glfw.GetTime()))))
 
 		// creates perspective
-		projectTransform := mgl32.Perspective(mgl32.DegToRad(60), windowWidth/windowHeight, 0.1, 100.0)
-
+		fov := float32(60.0)
+		projectTransform := mgl32.Perspective(mgl32.DegToRad(fov), windowWidth/windowHeight, 0.1, 100.0)
 
 		// Calculate camera transform matrix for a rotating camera focusing on the origin
 		// x/z are horizontal, y is vertical
