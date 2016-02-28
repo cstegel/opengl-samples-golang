@@ -9,7 +9,6 @@ Shows how to create a basic controllable FPS camera
 import (
 	"log"
 	"runtime"
-	"math"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.1/glfw"
@@ -20,6 +19,11 @@ import (
 
 const windowWidth = 1280
 const windowHeight = 720
+
+// only using global variables because this is meant as a simple example
+var cameraPos   = mgl32.Vec3{0.0, 0.0, 3.0}
+var cameraFront = mgl32.Vec3{0.0, 0.0, -1.0}
+var cameraUp    = mgl32.Vec3{0.0, 1.0, 0.0}
 
 // vertices to draw 6 faces of a cube
 var cubeVertices = []float32{
@@ -218,22 +222,14 @@ func programLoop(window *glfw.Window) error {
 		fov := float32(60.0)
 		projectTransform := mgl32.Perspective(mgl32.DegToRad(fov), windowWidth/windowHeight, 0.1, 100.0)
 
-		// Calculate camera transform matrix for a rotating camera focusing on the origin
+		// Calculate camera transform
 		// x/z are horizontal, y is vertical
-		var cameraRadius float32 = 10.0
-		cameraPos := mgl32.Vec3{
-			cameraRadius*float32(math.Sin(glfw.GetTime())),
-			0,
-			cameraRadius*float32(math.Cos(glfw.GetTime())),
-		}
-		cameraTarget := mgl32.Vec3{0, 0, 0}
-
-		up := mgl32.Vec3{0, 1, 0}
+		cameraTarget := cameraPos.Add(cameraFront)  // TODO-cs: why?
 
 		cameraTransform := mgl32.LookAt(
 			cameraPos.X(), cameraPos.Y(), cameraPos.Z(),
 			cameraTarget.X(), cameraTarget.Y(), cameraTarget.Z(),
-			up.X(), up.Y(), up.Z(),
+			cameraUp.X(), cameraUp.Y(), cameraUp.Z(),
 		)
 
 		gl.UniformMatrix4fv(program.GetUniformLocation("camera"), 1, false, &cameraTransform[0])
@@ -274,5 +270,19 @@ func keyCallback(window *glfw.Window, key glfw.Key, scancode int, action glfw.Ac
 	// which closes the application
 	if key == glfw.KeyEscape && action == glfw.Press {
 		window.SetShouldClose(true)
+	}
+
+	var cameraSpeed float32 = 0.05
+	if key == glfw.KeyW {
+		cameraPos = cameraPos.Add(cameraFront.Mul(cameraSpeed))
+	}
+	if key == glfw.KeyS {
+		cameraPos = cameraPos.Sub(cameraFront.Mul(cameraSpeed))
+	}
+	if key == glfw.KeyA {
+		cameraPos = cameraPos.Sub(cameraFront.Cross(cameraUp).Normalize().Mul(cameraSpeed))
+	}
+	if key == glfw.KeyD {
+		cameraPos = cameraPos.Add(cameraFront.Cross(cameraUp).Normalize().Mul(cameraSpeed))
 	}
 }
