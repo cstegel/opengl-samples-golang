@@ -9,10 +9,12 @@ Shows how to create a basic controllable FPS camera
 import (
 	"log"
 	"runtime"
+	"math"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.1/glfw"
 	"github.com/go-gl/mathgl/mgl32"
+	"github.com/go-gl/mathgl/mgl64"
 
 	"github.com/opengl-samples-golang/basic-camera/gfx"
 )
@@ -22,10 +24,16 @@ const windowHeight int = 720
 
 // only using global variables because this is meant as a simple example
 var cameraPos   = mgl32.Vec3{0.0, 0.0, 3.0}
-var cameraFront = mgl32.Vec3{0.0, 0.0, -1.0}
+var cameraFront = mgl32.Vec3{}
 var cameraUp    = mgl32.Vec3{0.0, 1.0, 0.0}
 
 var keysPressed [glfw.KeyLast]bool
+
+var firstCursorAction = true
+var cursorLastX float64
+var cursorLastY float64
+var pitch float64 = 0
+var yaw float64 = -90
 
 // vertices to draw 6 faces of a cube
 var cubeVertices = []float32{
@@ -108,7 +116,9 @@ func main() {
 	}
 
 	window.MakeContextCurrent()
+	window.SetInputMode(glfw.CursorMode, glfw.CursorDisabled)
 	window.SetKeyCallback(keyCallback)
+	window.SetCursorPosCallback(mouseCallback)
 
 	// Initialize Glow (go function bindings)
 	if err := gl.Init(); err != nil {
@@ -210,8 +220,9 @@ func programLoop(window *glfw.Window) error {
 		dTime         := curFrameTime - lastFrameTime
 		lastFrameTime  = curFrameTime
 
-		// update global variables about camera position
-		doMovement(dTime)
+		// update global variables about camera target and position
+		updateCamera()
+		updateMovement(dTime)
 
 		// background color
 		gl.ClearColor(0.2, 0.5, 0.5, 1.0)
@@ -277,7 +288,15 @@ func programLoop(window *glfw.Window) error {
 	return nil
 }
 
-func doMovement(dTime float64) {
+func updateCamera() {
+	// x, y, z
+	cameraFront[0] = float32(math.Cos(mgl64.DegToRad(pitch)) * math.Cos(mgl64.DegToRad(yaw)))
+	cameraFront[1] = float32(math.Sin(mgl64.DegToRad(pitch)))
+	cameraFront[2] = float32(math.Cos(mgl64.DegToRad(pitch)) * math.Sin(mgl64.DegToRad(yaw)))
+	cameraFront = cameraFront.Normalize()
+}
+
+func updateMovement(dTime float64) {
 	cameraSpeed := 5.00
 	adjustedSpeed := float32(dTime * cameraSpeed)
 
@@ -293,6 +312,31 @@ func doMovement(dTime float64) {
 	if keysPressed[glfw.KeyD] {
 		cameraPos = cameraPos.Add(cameraFront.Cross(cameraUp).Normalize().Mul(adjustedSpeed))
 	}
+}
+
+func mouseCallback(window *glfw.Window, xpos, ypos float64) {
+	sensitivity := 0.05
+
+	if firstCursorAction {
+		cursorLastX = xpos
+		cursorLastY = ypos
+		firstCursorAction = false
+	}
+
+	dx := sensitivity * (xpos - cursorLastX)
+	dy := sensitivity * -(ypos - cursorLastY) // reversed since y goes from bottom to top
+
+	cursorLastX = xpos
+	cursorLastY = ypos
+
+	pitch += dy
+	if pitch > 89.0 {
+		pitch = 89.0
+	} else if pitch < -89.0 {
+		pitch = -89.0
+	}
+
+	yaw = math.Mod(yaw + dx, 360)
 }
 
 func keyCallback(window *glfw.Window, key glfw.Key, scancode int, action glfw.Action,
