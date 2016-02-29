@@ -17,13 +17,15 @@ import (
 	"github.com/opengl-samples-golang/basic-camera/gfx"
 )
 
-const windowWidth = 1280
-const windowHeight = 720
+const windowWidth int  = 1280
+const windowHeight int = 720
 
 // only using global variables because this is meant as a simple example
 var cameraPos   = mgl32.Vec3{0.0, 0.0, 3.0}
 var cameraFront = mgl32.Vec3{0.0, 0.0, -1.0}
 var cameraUp    = mgl32.Vec3{0.0, 1.0, 0.0}
+
+var keysPressed [glfw.KeyLast]bool
 
 // vertices to draw 6 faces of a cube
 var cubeVertices = []float32{
@@ -102,20 +104,20 @@ func main() {
 	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
 	window, err := glfw.CreateWindow(windowWidth, windowHeight, "basic camera", nil, nil)
 	if err != nil {
-		panic(err)
+		log.Fatalln(err)
 	}
+
 	window.MakeContextCurrent()
+	window.SetKeyCallback(keyCallback)
 
 	// Initialize Glow (go function bindings)
 	if err := gl.Init(); err != nil {
 		panic(err)
 	}
 
-	window.SetKeyCallback(keyCallback)
-
 	err = programLoop(window)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalln(err)
 	}
 }
 
@@ -196,9 +198,20 @@ func programLoop(window *glfw.Window) error {
 	// ensure that triangles that are "behind" others do not draw over top of them
 	gl.Enable(gl.DEPTH_TEST)
 
+	lastFrameTime := glfw.GetTime()
+
 	for !window.ShouldClose() {
 		// poll events and call their registered callbacks
 		glfw.PollEvents()
+
+		// base calculations of time since last frame (basic program loop idea)
+		// For better advanced impl, read: http://gafferongames.com/game-physics/fix-your-timestep/
+		curFrameTime  := glfw.GetTime()
+		dTime         := curFrameTime - lastFrameTime
+		lastFrameTime  = curFrameTime
+
+		// update global variables about camera position
+		doMovement(dTime)
 
 		// background color
 		gl.ClearColor(0.2, 0.5, 0.5, 1.0)
@@ -220,10 +233,11 @@ func programLoop(window *glfw.Window) error {
 
 		// creates perspective
 		fov := float32(60.0)
-		projectTransform := mgl32.Perspective(mgl32.DegToRad(fov), windowWidth/windowHeight, 0.1, 100.0)
+		projectTransform := mgl32.Perspective(mgl32.DegToRad(fov),
+		                                      float32(windowWidth)/float32(windowHeight),
+		                                      0.1,
+		                                      100.0)
 
-		// Calculate camera transform
-		// x/z are horizontal, y is vertical
 		cameraTarget := cameraPos.Add(cameraFront)  // TODO-cs: why?
 
 		cameraTransform := mgl32.LookAt(
@@ -263,6 +277,24 @@ func programLoop(window *glfw.Window) error {
 	return nil
 }
 
+func doMovement(dTime float64) {
+	cameraSpeed := 5.00
+	adjustedSpeed := float32(dTime * cameraSpeed)
+
+	if keysPressed[glfw.KeyW] {
+		cameraPos = cameraPos.Add(cameraFront.Mul(adjustedSpeed))
+	}
+	if keysPressed[glfw.KeyS] {
+		cameraPos = cameraPos.Sub(cameraFront.Mul(adjustedSpeed))
+	}
+	if keysPressed[glfw.KeyA] {
+		cameraPos = cameraPos.Sub(cameraFront.Cross(cameraUp).Normalize().Mul(adjustedSpeed))
+	}
+	if keysPressed[glfw.KeyD] {
+		cameraPos = cameraPos.Add(cameraFront.Cross(cameraUp).Normalize().Mul(adjustedSpeed))
+	}
+}
+
 func keyCallback(window *glfw.Window, key glfw.Key, scancode int, action glfw.Action,
 	mods glfw.ModifierKey) {
 
@@ -272,17 +304,12 @@ func keyCallback(window *glfw.Window, key glfw.Key, scancode int, action glfw.Ac
 		window.SetShouldClose(true)
 	}
 
-	var cameraSpeed float32 = 0.05
-	if key == glfw.KeyW {
-		cameraPos = cameraPos.Add(cameraFront.Mul(cameraSpeed))
-	}
-	if key == glfw.KeyS {
-		cameraPos = cameraPos.Sub(cameraFront.Mul(cameraSpeed))
-	}
-	if key == glfw.KeyA {
-		cameraPos = cameraPos.Sub(cameraFront.Cross(cameraUp).Normalize().Mul(cameraSpeed))
-	}
-	if key == glfw.KeyD {
-		cameraPos = cameraPos.Add(cameraFront.Cross(cameraUp).Normalize().Mul(cameraSpeed))
+	// timing for key events occurs differently from what the program loop requires
+	// so just track what key actions occur and then access them in the program loop
+	switch action {
+	case glfw.Press:
+		keysPressed[key] = true
+	case glfw.Release:
+		keysPressed[key] = false
 	}
 }
