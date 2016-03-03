@@ -1,36 +1,12 @@
 package cam
 
 import (
-	"log"
 	"math"
 
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/go-gl/mathgl/mgl64"
-)
 
-type CursorListener interface {
-	// dx, dy
-	UpdateCursor(float64, float64)
-}
-
-type CursorManager interface {
-	RegisterCursorListener(*CursorListener)
-}
-
-type MovementListener interface {
-	UpdateMovement(float64, ...Direction)
-}
-
-type MovementManager interface {
-	RegisterMovementListener(*MovementListener)
-}
-
-type Direction int
-const (
-	FORWARD Direction = iota
-	BACKWARD Direction = iota
-	LEFT Direction = iota
-	RIGHT Direction = iota
+	"github.com/opengl-samples-golang/basic-camera/win"
 )
 
 type FpsCamera struct {
@@ -48,9 +24,11 @@ type FpsCamera struct {
 	up mgl32.Vec3
 	right mgl32.Vec3
 	worldUp mgl32.Vec3
+
+	inputManager *win.InputManager
 }
 
-func NewFpsCamera(position, worldUp mgl32.Vec3, yaw, pitch float64) (*FpsCamera) {
+func NewFpsCamera(position, worldUp mgl32.Vec3, yaw, pitch float64, im *win.InputManager) (*FpsCamera) {
 	cam := FpsCamera {
 		moveSpeed: 5.00,
 		cursorSensitivity: 0.05,
@@ -59,64 +37,70 @@ func NewFpsCamera(position, worldUp mgl32.Vec3, yaw, pitch float64) (*FpsCamera)
 		pos: position,
 		up: mgl32.Vec3{0, 1, 0},
 		worldUp: worldUp,
+		inputManager: im,
 	}
 
 	return &cam
 }
 
-func (camera *FpsCamera) updateVectors() {
-	// x, y, z
-	camera.front[0] = float32(math.Cos(mgl64.DegToRad(camera.pitch)) * math.Cos(mgl64.DegToRad(camera.yaw)))
-	camera.front[1] = float32(math.Sin(mgl64.DegToRad(camera.pitch)))
-	camera.front[2] = float32(math.Cos(mgl64.DegToRad(camera.pitch)) * math.Sin(mgl64.DegToRad(camera.yaw)))
-	camera.front = camera.front.Normalize()
-
-	// Gram-Schmidt process to figure out right and up vectors
-	camera.right = camera.worldUp.Cross(camera.front).Normalize()
-	camera.up = camera.right.Cross(camera.front).Normalize()
+func (c *FpsCamera) Update(dTime float64) {
+	c.updatePosition(dTime)
+	c.updateDirection()
 }
 
 // UpdatePosition updates this camera's position by giving directions that
 // the camera is to travel in and for how long
-func (camera *FpsCamera) UpdatePosition(dTime float64, directions ...Direction) {
-	adjustedSpeed := float32(dTime * camera.moveSpeed)
+func (c *FpsCamera) updatePosition(dTime float64) {
+	adjustedSpeed := float32(dTime * c.moveSpeed)
 
-	for _, dir := range directions {
-		switch dir {
-		case FORWARD:
-			camera.pos = camera.pos.Add(camera.front.Mul(adjustedSpeed))
-		case BACKWARD:
-			camera.pos = camera.pos.Sub(camera.front.Mul(adjustedSpeed))
-		case LEFT:
-			camera.pos = camera.pos.Sub(camera.front.Cross(camera.up).Normalize().Mul(adjustedSpeed))
-		case RIGHT:
-			camera.pos = camera.pos.Add(camera.front.Cross(camera.up).Normalize().Mul(adjustedSpeed))
-		default:
-			log.Output(1, string(dir) + " is an invalid 'Direction'")
-		}
+	if c.inputManager.IsActive(win.PLAYER_FORWARD) {
+		c.pos = c.pos.Add(c.front.Mul(adjustedSpeed))
+	}
+	if c.inputManager.IsActive(win.PLAYER_BACKWARD) {
+		c.pos = c.pos.Sub(c.front.Mul(adjustedSpeed))
+	}
+	if c.inputManager.IsActive(win.PLAYER_LEFT) {
+		c.pos = c.pos.Sub(c.front.Cross(c.up).Normalize().Mul(adjustedSpeed))
+	}
+	if c.inputManager.IsActive(win.PLAYER_RIGHT) {
+		c.pos = c.pos.Add(c.front.Cross(c.up).Normalize().Mul(adjustedSpeed))
 	}
 }
 
 // UpdateCursor updates the direction of the camera by giving it delta x/y values
 // that came from a cursor input device
-func (camera *FpsCamera) UpdateCursor(dx, dy float64) {
-	dx *= camera.cursorSensitivity
-	dy *= -camera.cursorSensitivity // reversed since y goes from bottom to top
+func (c *FpsCamera) updateDirection() {
+	dCursor := c.inputManager.CursorChange()
 
-	camera.pitch += dy
-	if camera.pitch > 89.0 {
-		camera.pitch = 89.0
-	} else if camera.pitch < -89.0 {
-		camera.pitch = -89.0
+	dx := -c.cursorSensitivity * dCursor[0]
+	dy := c.cursorSensitivity * dCursor[1]
+
+	c.pitch += dy
+	if c.pitch > 89.0 {
+		c.pitch = 89.0
+	} else if c.pitch < -89.0 {
+		c.pitch = -89.0
 	}
 
-	camera.yaw = math.Mod(camera.yaw + dx, 360)
-	camera.updateVectors()
+	c.yaw = math.Mod(c.yaw + dx, 360)
+	c.updateVectors()
+}
+
+func (c *FpsCamera) updateVectors() {
+	// x, y, z
+	c.front[0] = float32(math.Cos(mgl64.DegToRad(c.pitch)) * math.Cos(mgl64.DegToRad(c.yaw)))
+	c.front[1] = float32(math.Sin(mgl64.DegToRad(c.pitch)))
+	c.front[2] = float32(math.Cos(mgl64.DegToRad(c.pitch)) * math.Sin(mgl64.DegToRad(c.yaw)))
+	c.front = c.front.Normalize()
+
+	// Gram-Schmidt process to figure out right and up vectors
+	c.right = c.worldUp.Cross(c.front).Normalize()
+	c.up = c.right.Cross(c.front).Normalize()
 }
 
 // GetCameraTransform gets the matrix to transform from world coordinates to
-// this camera's coordinates
-func (camera *FpsCamera) GetCameraTransform() mgl32.Mat4 {
+// this camera's coordinates.
+func (camera *FpsCamera) GetTransform() mgl32.Mat4 {
 	cameraTarget := camera.pos.Add(camera.front)
 
 	return mgl32.LookAt(

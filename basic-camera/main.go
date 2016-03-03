@@ -3,37 +3,22 @@ package main
 /*
 Adapted from this tutorial: http://www.learnopengl.com/#!Getting-started/Camera
 
-Shows how to create a basic controllable FPS camera
+Shows how to create a basic controllable FPS camera. This has been refactored into
+classes to allow better reuse going forward.
 */
 
 import (
 	"log"
 	"runtime"
-	"math"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.1/glfw"
 	"github.com/go-gl/mathgl/mgl32"
-	"github.com/go-gl/mathgl/mgl64"
 
 	"github.com/opengl-samples-golang/basic-camera/gfx"
+	"github.com/opengl-samples-golang/basic-camera/win"
+	"github.com/opengl-samples-golang/basic-camera/cam"
 )
-
-const windowWidth int  = 1280
-const windowHeight int = 720
-
-// only using global variables because this is meant as a simple example
-var cameraPos   = mgl32.Vec3{0.0, 0.0, 3.0}
-var cameraFront = mgl32.Vec3{}
-var cameraUp    = mgl32.Vec3{0.0, 1.0, 0.0}
-
-var keysPressed [glfw.KeyLast]bool
-
-var firstCursorAction = true
-var cursorLastX float64
-var cursorLastY float64
-var pitch float64 = 0
-var yaw float64 = -90
 
 // vertices to draw 6 faces of a cube
 var cubeVertices = []float32{
@@ -110,22 +95,15 @@ func main() {
 	glfw.WindowHint(glfw.ContextVersionMinor, 1)
 	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
 	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
-	window, err := glfw.CreateWindow(windowWidth, windowHeight, "basic camera", nil, nil)
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	window.MakeContextCurrent()
-	window.SetInputMode(glfw.CursorMode, glfw.CursorDisabled)
-	window.SetKeyCallback(keyCallback)
-	window.SetCursorPosCallback(mouseCallback)
 
 	// Initialize Glow (go function bindings)
 	if err := gl.Init(); err != nil {
 		panic(err)
 	}
 
-	err = programLoop(window)
+	window := win.NewWindow(1280, 720, "basic camera")
+
+	err := programLoop(window)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -173,7 +151,7 @@ func createVAO(vertices []float32, indices []uint32) uint32 {
 	return VAO
 }
 
-func programLoop(window *glfw.Window) error {
+func programLoop(window *win.Window) error {
 
 	// the linked shader program determines how the data will be rendered
 	vertShader, err := gfx.NewShaderFromFile("shaders/basic.vert", gl.VERTEX_SHADER)
@@ -208,21 +186,15 @@ func programLoop(window *glfw.Window) error {
 	// ensure that triangles that are "behind" others do not draw over top of them
 	gl.Enable(gl.DEPTH_TEST)
 
-	lastFrameTime := glfw.GetTime()
+	camera := cam.NewFpsCamera(mgl32.Vec3{0, 0, 3}, mgl32.Vec3{0, 1, 0}, -90, 0, window.InputManager())
 
 	for !window.ShouldClose() {
-		// poll events and call their registered callbacks
-		glfw.PollEvents()
 
-		// base calculations of time since last frame (basic program loop idea)
-		// For better advanced impl, read: http://gafferongames.com/game-physics/fix-your-timestep/
-		curFrameTime  := glfw.GetTime()
-		dTime         := curFrameTime - lastFrameTime
-		lastFrameTime  = curFrameTime
+		// swaps in last buffer, polls for window events, and generally sets up for a new render frame
+		window.StartFrame()
 
-		// update global variables about camera target and position
-		updateCamera()
-		updateMovement(dTime)
+		// update camera position and direction from input evevnts
+		camera.Update(window.SinceLastFrame())
 
 		// background color
 		gl.ClearColor(0.2, 0.5, 0.5, 1.0)
@@ -245,19 +217,12 @@ func programLoop(window *glfw.Window) error {
 		// creates perspective
 		fov := float32(60.0)
 		projectTransform := mgl32.Perspective(mgl32.DegToRad(fov),
-		                                      float32(windowWidth)/float32(windowHeight),
+		                                      float32(window.Width())/float32(window.Height()),
 		                                      0.1,
 		                                      100.0)
 
-		cameraTarget := cameraPos.Add(cameraFront)  // TODO-cs: why?
-
-		cameraTransform := mgl32.LookAt(
-			cameraPos.X(), cameraPos.Y(), cameraPos.Z(),
-			cameraTarget.X(), cameraTarget.Y(), cameraTarget.Z(),
-			cameraUp.X(), cameraUp.Y(), cameraUp.Z(),
-		)
-
-		gl.UniformMatrix4fv(program.GetUniformLocation("camera"), 1, false, &cameraTransform[0])
+		camTransform := camera.GetTransform()
+		gl.UniformMatrix4fv(program.GetUniformLocation("camera"), 1, false, &camTransform[0])
 		gl.UniformMatrix4fv(program.GetUniformLocation("project"), 1, false,
 		&projectTransform[0])
 
@@ -280,80 +245,7 @@ func programLoop(window *glfw.Window) error {
 		texture1.UnBind()
 
 		// end of draw loop
-
-		// swap in the rendered buffer
-		window.SwapBuffers()
 	}
 
 	return nil
-}
-
-func updateCamera() {
-	// x, y, z
-	cameraFront[0] = float32(math.Cos(mgl64.DegToRad(pitch)) * math.Cos(mgl64.DegToRad(yaw)))
-	cameraFront[1] = float32(math.Sin(mgl64.DegToRad(pitch)))
-	cameraFront[2] = float32(math.Cos(mgl64.DegToRad(pitch)) * math.Sin(mgl64.DegToRad(yaw)))
-	cameraFront = cameraFront.Normalize()
-}
-
-func updateMovement(dTime float64) {
-	cameraSpeed := 5.00
-	adjustedSpeed := float32(dTime * cameraSpeed)
-
-	if keysPressed[glfw.KeyW] {
-		cameraPos = cameraPos.Add(cameraFront.Mul(adjustedSpeed))
-	}
-	if keysPressed[glfw.KeyS] {
-		cameraPos = cameraPos.Sub(cameraFront.Mul(adjustedSpeed))
-	}
-	if keysPressed[glfw.KeyA] {
-		cameraPos = cameraPos.Sub(cameraFront.Cross(cameraUp).Normalize().Mul(adjustedSpeed))
-	}
-	if keysPressed[glfw.KeyD] {
-		cameraPos = cameraPos.Add(cameraFront.Cross(cameraUp).Normalize().Mul(adjustedSpeed))
-	}
-}
-
-func mouseCallback(window *glfw.Window, xpos, ypos float64) {
-	sensitivity := 0.05
-
-	if firstCursorAction {
-		cursorLastX = xpos
-		cursorLastY = ypos
-		firstCursorAction = false
-	}
-
-	dx := sensitivity * (xpos - cursorLastX)
-	dy := sensitivity * -(ypos - cursorLastY) // reversed since y goes from bottom to top
-
-	cursorLastX = xpos
-	cursorLastY = ypos
-
-	pitch += dy
-	if pitch > 89.0 {
-		pitch = 89.0
-	} else if pitch < -89.0 {
-		pitch = -89.0
-	}
-
-	yaw = math.Mod(yaw + dx, 360)
-}
-
-func keyCallback(window *glfw.Window, key glfw.Key, scancode int, action glfw.Action,
-	mods glfw.ModifierKey) {
-
-	// When a user presses the escape key, we set the WindowShouldClose property to true,
-	// which closes the application
-	if key == glfw.KeyEscape && action == glfw.Press {
-		window.SetShouldClose(true)
-	}
-
-	// timing for key events occurs differently from what the program loop requires
-	// so just track what key actions occur and then access them in the program loop
-	switch action {
-	case glfw.Press:
-		keysPressed[key] = true
-	case glfw.Release:
-		keysPressed[key] = false
-	}
 }
