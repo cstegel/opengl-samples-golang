@@ -177,6 +177,7 @@ func programLoop(window *win.Window) error {
 	}
 
 	VAO := createVAO(cubeVertices, nil)
+	lightVAO := createVAO(cubeVertices, nil)
 
 	// ensure that triangles that are "behind" others do not draw over top of them
 	gl.Enable(gl.DEPTH_TEST)
@@ -210,7 +211,8 @@ func programLoop(window *win.Window) error {
 
 		camTransform := camera.GetTransform()
 		lightPos := mgl32.Vec3{1.2, 1, 2}
-		lightTransform := mgl32.Scale3D(0.2, 0.2, 0.2).Mul4(mgl32.Translate3D(lightPos.X(), lightPos.Y(), lightPos.Z()))
+		lightTransform := mgl32.Translate3D(lightPos.X(), lightPos.Y(), lightPos.Z()).Mul4(
+		                                    mgl32.Scale3D(0.2, 0.2, 0.2))
 
 		program.Use()
 		gl.UniformMatrix4fv(program.GetUniformLocation("camera"), 1, false, &camTransform[0])
@@ -234,15 +236,16 @@ func programLoop(window *win.Window) error {
 
 			gl.DrawArrays(gl.TRIANGLES, 0, 36)
 		}
+		gl.BindVertexArray(0)
 
 		// Draw the light obj after the other boxes using its separate shader program
 		// this means that we must re-bind any uniforms
 		lightProgram.Use()
-		gl.UniformMatrix4fv(program.GetUniformLocation("world"), 1, false,
-							&lightTransform[0])
-		gl.UniformMatrix4fv(program.GetUniformLocation("camera"), 1, false, &camTransform[0])
-		gl.UniformMatrix4fv(program.GetUniformLocation("project"), 1, false,
-		                    &projectTransform[0])
+		gl.BindVertexArray(lightVAO)
+		gl.UniformMatrix4fv(lightProgram.GetUniformLocation("world"), 1, false, &lightTransform[0])
+		gl.UniformMatrix4fv(lightProgram.GetUniformLocation("camera"), 1, false, &camTransform[0])
+		gl.UniformMatrix4fv(lightProgram.GetUniformLocation("project"), 1, false, &projectTransform[0])
+		gl.DrawArrays(gl.TRIANGLES, 0, 36)
 
 		gl.BindVertexArray(0)
 
