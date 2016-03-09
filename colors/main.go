@@ -1,10 +1,9 @@
 package main
 
 /*
-Adapted from this tutorial: http://www.learnopengl.com/#!Getting-started/Camera
+Adapted from this tutorial: http://www.learnopengl.com/#!Lighting/Colors
 
-Shows how to create a basic controllable FPS camera. This has been refactored into
-classes to allow better reuse going forward.
+Shows how the basic usage of color for 3D objects
 */
 
 import (
