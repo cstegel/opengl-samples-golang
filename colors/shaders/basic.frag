@@ -1,14 +1,12 @@
 #version 410 core
 
-in vec2 TexCoord;
-
 out vec4 color;
 
-uniform sampler2D ourTexture0;
-uniform sampler2D ourTexture1;
+uniform vec3 objectColor;
+uniform vec3 lightColor;
 
 void main()
 {
-    // mix the two textures together 
-    color = mix(texture(ourTexture0, TexCoord), texture(ourTexture1, TexCoord), 0.5);
+    // the color of the light "reflects" off the object
+    color = vec4(objectColor * lightColor, 1.0f);
 }

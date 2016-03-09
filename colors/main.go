@@ -140,11 +140,6 @@ func createVAO(vertices []float32, indices []uint32) uint32 {
 	gl.EnableVertexAttribArray(0)
 	offset += 3*4
 
-	// texture position
-	gl.VertexAttribPointer(1, 2, gl.FLOAT, false, stride, gl.PtrOffset(offset))
-	gl.EnableVertexAttribArray(1)
-	offset += 2*4
-
 	// unbind the VAO (safe practice so we don't accidentally (mis)configure it later)
 	gl.BindVertexArray(0)
 
@@ -170,18 +165,18 @@ func programLoop(window *win.Window) error {
 	}
 	defer program.Delete()
 
-	VAO := createVAO(cubeVertices, nil)
-	texture0, err := gfx.NewTextureFromFile("../images/RTS_Crate.png",
-	                                        gl.CLAMP_TO_EDGE, gl.CLAMP_TO_EDGE)
+	lightFragShader, err := gfx.NewShaderFromFile("shaders/light.frag", gl.FRAGMENT_SHADER)
 	if err != nil {
-		panic(err.Error())
+		return err
 	}
 
-	texture1, err := gfx.NewTextureFromFile("../images/trollface-transparent.png",
-	                                        gl.CLAMP_TO_EDGE, gl.CLAMP_TO_EDGE)
+	// special shader program so that lights themselves are not affected by lighting
+	lightProgram, err := gfx.NewProgram(vertShader, lightFragShader)
 	if err != nil {
-		panic(err.Error())
+		return err
 	}
+
+	VAO := createVAO(cubeVertices, nil)
 
 	// ensure that triangles that are "behind" others do not draw over top of them
 	gl.Enable(gl.DEPTH_TEST)
@@ -197,17 +192,9 @@ func programLoop(window *win.Window) error {
 		camera.Update(window.SinceLastFrame())
 
 		// background color
-		gl.ClearColor(0.2, 0.5, 0.5, 1.0)
+		gl.ClearColor(0, 0, 0, 1.0)
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)  // depth buffer needed for DEPTH_TEST
 
-		program.Use()
-
-		// bind textures
-		texture0.Bind(gl.TEXTURE0)
-		texture0.SetUniform(program.GetUniformLocation("ourTexture0"))
-
-		texture1.Bind(gl.TEXTURE1)
-		texture1.SetUniform(program.GetUniformLocation("ourTexture1"))
 
 		// cube rotation matrices
 		rotateX   := (mgl32.Rotate3DX(mgl32.DegToRad(-60 * float32(glfw.GetTime()))))
@@ -222,13 +209,22 @@ func programLoop(window *win.Window) error {
 		                                      100.0)
 
 		camTransform := camera.GetTransform()
+		lightPos := mgl32.Vec3{1.2, 1, 2}
+		lightTransform := mgl32.Scale3D(0.2, 0.2, 0.2).Mul4(mgl32.Translate3D(lightPos.X(), lightPos.Y(), lightPos.Z()))
+
+		program.Use()
 		gl.UniformMatrix4fv(program.GetUniformLocation("camera"), 1, false, &camTransform[0])
 		gl.UniformMatrix4fv(program.GetUniformLocation("project"), 1, false,
-		&projectTransform[0])
+		                    &projectTransform[0])
 
 		gl.BindVertexArray(VAO)
 
 		// draw each cube after all coordinate system transforms are bound
+
+		// obj is colored, light is white
+		gl.Uniform3f(program.GetUniformLocation("objectColor"), 1.0, 0.5, 0.31)
+		gl.Uniform3f(program.GetUniformLocation("lightColor"), 1.0, 1.0, 1.0)
+
 		for _, pos := range cubePositions {
 			worldTranslate := mgl32.Translate3D(pos[0], pos[1], pos[2])
 			worldTransform := (worldTranslate.Mul4(rotateX.Mul3(rotateY).Mul3(rotateZ).Mat4()))
@@ -239,10 +235,16 @@ func programLoop(window *win.Window) error {
 			gl.DrawArrays(gl.TRIANGLES, 0, 36)
 		}
 
-		gl.BindVertexArray(0)
+		// Draw the light obj after the other boxes using its separate shader program
+		// this means that we must re-bind any uniforms
+		lightProgram.Use()
+		gl.UniformMatrix4fv(program.GetUniformLocation("world"), 1, false,
+							&lightTransform[0])
+		gl.UniformMatrix4fv(program.GetUniformLocation("camera"), 1, false, &camTransform[0])
+		gl.UniformMatrix4fv(program.GetUniformLocation("project"), 1, false,
+		                    &projectTransform[0])
 
-		texture0.UnBind()
-		texture1.UnBind()
+		gl.BindVertexArray(0)
 
 		// end of draw loop
 	}
