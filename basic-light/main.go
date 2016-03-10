@@ -100,7 +100,7 @@ func main() {
 		panic(err)
 	}
 
-	window := win.NewWindow(1280, 720, "basic camera")
+	window := win.NewWindow(1280, 720, "basic light")
 
 	err := programLoop(window)
 	if err != nil {
@@ -214,7 +214,7 @@ func programLoop(window *win.Window) error {
 		                                      100.0)
 
 		camTransform := camera.GetTransform()
-		lightPos := mgl32.Vec3{0.6, 1, -1.7}
+		lightPos := mgl32.Vec3{0.6, 1, 0.1}
 		lightTransform := mgl32.Translate3D(lightPos.X(), lightPos.Y(), lightPos.Z()).Mul4(
 		                                    mgl32.Scale3D(0.2, 0.2, 0.2))
 
@@ -233,8 +233,14 @@ func programLoop(window *win.Window) error {
 		gl.Uniform3f(program.GetUniformLocation("lightPos"), lightPos.X(), lightPos.Y(), lightPos.Z())
 
 		for _, pos := range cubePositions {
+
+			// turn the cubes into rectangular prisms for more fun
 			worldTranslate := mgl32.Translate3D(pos[0], pos[1], pos[2])
-			worldTransform := (worldTranslate.Mul4(rotateX.Mul3(rotateY).Mul3(rotateZ).Mat4()))
+			worldTransform := worldTranslate.Mul4(
+				rotateX.Mul3(rotateY).Mul3(rotateZ).Mat4().Mul4(
+					mgl32.Scale3D(1.2, 1.2, 0.7),
+				),
+			)
 
 			gl.UniformMatrix4fv(program.GetUniformLocation("model"), 1, false,
 			                    &worldTransform[0])
