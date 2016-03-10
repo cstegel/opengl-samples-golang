@@ -21,48 +21,48 @@ import (
 
 // vertices to draw 6 faces of a cube
 var cubeVertices = []float32{
-	// position        // texture position
-	-0.5, -0.5, -0.5,  0.0, 0.0,
-	 0.5, -0.5, -0.5,  1.0, 0.0,
-	 0.5,  0.5, -0.5,  1.0, 1.0,
-	 0.5,  0.5, -0.5,  1.0, 1.0,
-	-0.5,  0.5, -0.5,  0.0, 1.0,
-	-0.5, -0.5, -0.5,  0.0, 0.0,
+	// position        // normal vector
+	-0.5, -0.5, -0.5,  0.0,  0.0, -1.0,
+	 0.5, -0.5, -0.5,  0.0,  0.0, -1.0,
+	 0.5,  0.5, -0.5,  0.0,  0.0, -1.0,
+	 0.5,  0.5, -0.5,  0.0,  0.0, -1.0,
+	-0.5,  0.5, -0.5,  0.0,  0.0, -1.0,
+	-0.5, -0.5, -0.5,  0.0,  0.0, -1.0,
 
-	-0.5, -0.5,  0.5,  0.0, 0.0,
-	 0.5, -0.5,  0.5,  1.0, 0.0,
-	 0.5,  0.5,  0.5,  1.0, 1.0,
-	 0.5,  0.5,  0.5,  1.0, 1.0,
-	-0.5,  0.5,  0.5,  0.0, 1.0,
-	-0.5, -0.5,  0.5,  0.0, 0.0,
+	-0.5, -0.5,  0.5,  0.0,  0.0, 1.0,
+	 0.5, -0.5,  0.5,  0.0,  0.0, 1.0,
+	 0.5,  0.5,  0.5,  0.0,  0.0, 1.0,
+	 0.5,  0.5,  0.5,  0.0,  0.0, 1.0,
+	-0.5,  0.5,  0.5,  0.0,  0.0, 1.0,
+	-0.5, -0.5,  0.5,  0.0,  0.0, 1.0,
 
-	-0.5,  0.5,  0.5,  1.0, 0.0,
-	-0.5,  0.5, -0.5,  1.0, 1.0,
-	-0.5, -0.5, -0.5,  0.0, 1.0,
-	-0.5, -0.5, -0.5,  0.0, 1.0,
-	-0.5, -0.5,  0.5,  0.0, 0.0,
-	-0.5,  0.5,  0.5,  1.0, 0.0,
+	-0.5,  0.5,  0.5, -1.0,  0.0,  0.0,
+	-0.5,  0.5, -0.5, -1.0,  0.0,  0.0,
+	-0.5, -0.5, -0.5, -1.0,  0.0,  0.0,
+	-0.5, -0.5, -0.5, -1.0,  0.0,  0.0,
+	-0.5, -0.5,  0.5, -1.0,  0.0,  0.0,
+	-0.5,  0.5,  0.5, -1.0,  0.0,  0.0,
 
-	 0.5,  0.5,  0.5,  1.0, 0.0,
-	 0.5,  0.5, -0.5,  1.0, 1.0,
-	 0.5, -0.5, -0.5,  0.0, 1.0,
-	 0.5, -0.5, -0.5,  0.0, 1.0,
-	 0.5, -0.5,  0.5,  0.0, 0.0,
-	 0.5,  0.5,  0.5,  1.0, 0.0,
+	 0.5,  0.5,  0.5,  1.0,  0.0,  0.0,
+	 0.5,  0.5, -0.5,  1.0,  0.0,  0.0,
+	 0.5, -0.5, -0.5,  1.0,  0.0,  0.0,
+	 0.5, -0.5, -0.5,  1.0,  0.0,  0.0,
+	 0.5, -0.5,  0.5,  1.0,  0.0,  0.0,
+	 0.5,  0.5,  0.5,  1.0,  0.0,  0.0,
 
-	-0.5, -0.5, -0.5,  0.0, 1.0,
-	 0.5, -0.5, -0.5,  1.0, 1.0,
-	 0.5, -0.5,  0.5,  1.0, 0.0,
-	 0.5, -0.5,  0.5,  1.0, 0.0,
-	-0.5, -0.5,  0.5,  0.0, 0.0,
-	-0.5, -0.5, -0.5,  0.0, 1.0,
+	-0.5, -0.5, -0.5,  0.0, -1.0,  0.0,
+	 0.5, -0.5, -0.5,  0.0, -1.0,  0.0,
+	 0.5, -0.5,  0.5,  0.0, -1.0,  0.0,
+	 0.5, -0.5,  0.5,  0.0, -1.0,  0.0,
+	-0.5, -0.5,  0.5,  0.0, -1.0,  0.0,
+	-0.5, -0.5, -0.5,  0.0, -1.0,  0.0,
 
-	-0.5,  0.5, -0.5,  0.0, 1.0,
-	 0.5,  0.5, -0.5,  1.0, 1.0,
-	 0.5,  0.5,  0.5,  1.0, 0.0,
-	 0.5,  0.5,  0.5,  1.0, 0.0,
-	-0.5,  0.5,  0.5,  0.0, 0.0,
-	-0.5,  0.5, -0.5,  0.0, 1.0,
+	-0.5,  0.5, -0.5,  0.0,  1.0,  0.0,
+	 0.5,  0.5, -0.5,  0.0,  1.0,  0.0,
+	 0.5,  0.5,  0.5,  0.0,  1.0,  0.0,
+	 0.5,  0.5,  0.5,  0.0,  1.0,  0.0,
+	-0.5,  0.5,  0.5,  0.0,  1.0,  0.0,
+	-0.5,  0.5, -0.5,  0.0,  1.0,  0.0,
 }
 
 var cubePositions = [][]float32 {
@@ -131,12 +131,17 @@ func createVAO(vertices []float32, indices []uint32) uint32 {
 	gl.BufferData(gl.ARRAY_BUFFER, len(vertices)*4, gl.Ptr(vertices), gl.STATIC_DRAW)
 
 	// size of one whole vertex (sum of attrib sizes)
-	var stride int32 = 3*4 + 2*4
+	var stride int32 = 3*4 + 3*4
 	var offset int = 0
 
 	// position
 	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, stride, gl.PtrOffset(offset))
 	gl.EnableVertexAttribArray(0)
+	offset += 3*4
+
+	// normal
+	gl.VertexAttribPointer(1, 3, gl.FLOAT, false, stride, gl.PtrOffset(offset))
+	gl.EnableVertexAttribArray(1)
 	offset += 3*4
 
 	// unbind the VAO (safe practice so we don't accidentally (mis)configure it later)
@@ -148,12 +153,12 @@ func createVAO(vertices []float32, indices []uint32) uint32 {
 func programLoop(window *win.Window) error {
 
 	// the linked shader program determines how the data will be rendered
-	vertShader, err := gfx.NewShaderFromFile("shaders/basic.vert", gl.VERTEX_SHADER)
+	vertShader, err := gfx.NewShaderFromFile("shaders/phong.vert", gl.VERTEX_SHADER)
 	if err != nil {
 		return err
 	}
 
-	fragShader, err := gfx.NewShaderFromFile("shaders/basic.frag", gl.FRAGMENT_SHADER)
+	fragShader, err := gfx.NewShaderFromFile("shaders/phong.frag", gl.FRAGMENT_SHADER)
 	if err != nil {
 		return err
 	}
@@ -209,12 +214,12 @@ func programLoop(window *win.Window) error {
 		                                      100.0)
 
 		camTransform := camera.GetTransform()
-		lightPos := mgl32.Vec3{1.2, 1, 2}
+		lightPos := mgl32.Vec3{0.6, 1, -1.7}
 		lightTransform := mgl32.Translate3D(lightPos.X(), lightPos.Y(), lightPos.Z()).Mul4(
 		                                    mgl32.Scale3D(0.2, 0.2, 0.2))
 
 		program.Use()
-		gl.UniformMatrix4fv(program.GetUniformLocation("camera"), 1, false, &camTransform[0])
+		gl.UniformMatrix4fv(program.GetUniformLocation("view"), 1, false, &camTransform[0])
 		gl.UniformMatrix4fv(program.GetUniformLocation("project"), 1, false,
 		                    &projectTransform[0])
 
@@ -225,12 +230,13 @@ func programLoop(window *win.Window) error {
 		// obj is colored, light is white
 		gl.Uniform3f(program.GetUniformLocation("objectColor"), 1.0, 0.5, 0.31)
 		gl.Uniform3f(program.GetUniformLocation("lightColor"), 1.0, 1.0, 1.0)
+		gl.Uniform3f(program.GetUniformLocation("lightPos"), lightPos.X(), lightPos.Y(), lightPos.Z())
 
 		for _, pos := range cubePositions {
 			worldTranslate := mgl32.Translate3D(pos[0], pos[1], pos[2])
 			worldTransform := (worldTranslate.Mul4(rotateX.Mul3(rotateY).Mul3(rotateZ).Mat4()))
 
-			gl.UniformMatrix4fv(program.GetUniformLocation("world"), 1, false,
+			gl.UniformMatrix4fv(program.GetUniformLocation("model"), 1, false,
 			                    &worldTransform[0])
 
 			gl.DrawArrays(gl.TRIANGLES, 0, 36)
@@ -241,8 +247,8 @@ func programLoop(window *win.Window) error {
 		// this means that we must re-bind any uniforms
 		lightProgram.Use()
 		gl.BindVertexArray(lightVAO)
-		gl.UniformMatrix4fv(lightProgram.GetUniformLocation("world"), 1, false, &lightTransform[0])
-		gl.UniformMatrix4fv(lightProgram.GetUniformLocation("camera"), 1, false, &camTransform[0])
+		gl.UniformMatrix4fv(lightProgram.GetUniformLocation("model"), 1, false, &lightTransform[0])
+		gl.UniformMatrix4fv(lightProgram.GetUniformLocation("view"), 1, false, &camTransform[0])
 		gl.UniformMatrix4fv(lightProgram.GetUniformLocation("project"), 1, false, &projectTransform[0])
 		gl.DrawArrays(gl.TRIANGLES, 0, 36)
 
