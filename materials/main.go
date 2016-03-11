@@ -1,14 +1,15 @@
 package main
 
 /*
-http://www.learnopengl.com/#!Lighting/Basic-Lighting
+http://www.learnopengl.com/#!Lighting/Materials
 
-Shows basic Phong lighting
+Shows basic materials with phong lighting
 */
 
 import (
 	"log"
 	"runtime"
+	"math"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.1/glfw"
@@ -202,9 +203,9 @@ func programLoop(window *win.Window) error {
 
 
 		// cube rotation matrices
-		rotateX   := (mgl32.Rotate3DX(mgl32.DegToRad(-60 * float32(glfw.GetTime()))))
-		rotateY   := (mgl32.Rotate3DY(mgl32.DegToRad(-60 * float32(glfw.GetTime()))))
-		rotateZ   := (mgl32.Rotate3DZ(mgl32.DegToRad(-60 * float32(glfw.GetTime()))))
+		rotateX   := (mgl32.Rotate3DX(mgl32.DegToRad(-45 * float32(glfw.GetTime()))))
+		rotateY   := (mgl32.Rotate3DY(mgl32.DegToRad(-45 * float32(glfw.GetTime()))))
+		rotateZ   := (mgl32.Rotate3DZ(mgl32.DegToRad(-45 * float32(glfw.GetTime()))))
 
 		// creates perspective
 		fov := float32(60.0)
@@ -228,18 +229,41 @@ func programLoop(window *win.Window) error {
 		// draw each cube after all coordinate system transforms are bound
 
 		// obj is colored, light is white
-		gl.Uniform3f(program.GetUniformLocation("objectColor"), 1.0, 0.5, 0.31)
-		gl.Uniform3f(program.GetUniformLocation("lightColor"), 1.0, 1.0, 1.0)
-		gl.Uniform3f(program.GetUniformLocation("lightPos"), lightPos.X(), lightPos.Y(), lightPos.Z())
+		gl.Uniform3f(program.GetUniformLocation("material.ambient"), 1.0, 0.5, 0.31)
+		gl.Uniform3f(program.GetUniformLocation("material.diffuse"), 1.0, 0.5, 0.31)
+		gl.Uniform3f(program.GetUniformLocation("material.specular"), 0.5, 0.5, 0.5)
+		gl.Uniform1f(program.GetUniformLocation("material.shininess"), 32.0)
+
+		lightColor := mgl32.Vec3{
+			float32(math.Sin(glfw.GetTime() * 1)),
+			float32(math.Sin(glfw.GetTime() * 0.35)),
+			float32(math.Sin(glfw.GetTime() * 0.65)),
+		}
+
+		diffuseColor := mgl32.Vec3{
+			0.5 * lightColor[0],
+			0.5 * lightColor[1],
+			0.5 * lightColor[2],
+		}
+		ambientColor := mgl32.Vec3{
+			0.2 * lightColor[0],
+			0.2 * lightColor[1],
+			0.2 * lightColor[2],
+		}
+
+		gl.Uniform3f(program.GetUniformLocation("light.ambient"),
+		             ambientColor[0], ambientColor[1], ambientColor[2])
+		gl.Uniform3f(program.GetUniformLocation("light.diffuse"),
+		             diffuseColor[0], diffuseColor[1], diffuseColor[2])
+		gl.Uniform3f(program.GetUniformLocation("light.specular"), 1.0, 1.0, 1.0)
+		gl.Uniform3f(program.GetUniformLocation("light.position"), lightPos.X(), lightPos.Y(), lightPos.Z())
 
 		for _, pos := range cubePositions {
 
 			// turn the cubes into rectangular prisms for more fun
 			worldTranslate := mgl32.Translate3D(pos[0], pos[1], pos[2])
 			worldTransform := worldTranslate.Mul4(
-				rotateX.Mul3(rotateY).Mul3(rotateZ).Mat4().Mul4(
-					mgl32.Scale3D(1.2, 1.2, 0.7),
-				),
+				rotateX.Mul3(rotateY).Mul3(rotateZ).Mat4(),
 			)
 
 			gl.UniformMatrix4fv(program.GetUniformLocation("model"), 1, false,

@@ -1,45 +1,46 @@
 #version 410 core
 
+struct Material {
+	vec3 ambient;
+	vec3 diffuse;
+	vec3 specular;
+	float shininess;
+};
+
+struct Light {
+	vec3 position;
+
+	vec3 ambient;
+	vec3 diffuse;
+	vec3 specular;
+};
+
 in vec3 Normal;
 in vec3 FragPos;
 in vec3 LightPos;
 out vec4 color;
 
-uniform vec3 objectColor;
-uniform vec3 lightColor;
+uniform Material material;
+uniform Light light;
 
 void main()
 {
-	// affects diffuse and specular lighting
-	float lightPower = 2.0f;
+	// ambient
+	vec3 ambient = light.ambient * material.ambient;
 
-	// diffuse and specular intensity are affected by the amount of light they get based on how
-	// far they are from a light source (inverse square of distance)
-	float distToLight = length(LightPos - FragPos);
-
-	// this is not the correct equation for light decay but it is close
-	// see light-casters sample for the proper way
-	float distIntensityDecay = 1.0f / pow(distToLight, 2);
-
-	float ambientStrength = 0.05f;
-	vec3 ambientLight = ambientStrength * lightColor;
-
+	// diffuse
 	vec3 norm = normalize(Normal);
 	vec3 dirToLight = normalize(LightPos - FragPos);
 	float lightNormalDiff = max(dot(norm, dirToLight), 0.0);
+	vec3 diffuse = light.diffuse * (material.diffuse * lightNormalDiff);
 
-	// diffuse light is greatest when surface is perpendicular to light (dot product)
-	vec3 diffuse = lightNormalDiff * lightColor;
-	vec3 diffuseLight = lightPower * diffuse * distIntensityDecay * lightColor;
-
-	float specularStrength = 1.0f;
-	int shininess = 64;
+	// specular
 	vec3 viewPos = vec3(0.0f, 0.0f, 0.0f);
 	vec3 dirToView = normalize(viewPos - FragPos);
 	vec3 reflectDir = reflect(-dirToLight, norm);
-	float spec = pow(max(dot(dirToView, reflectDir), 0.0), shininess);
-	vec3 specularLight = lightPower * specularStrength * spec * distIntensityDecay * lightColor;
+	float spec = pow(max(dot(dirToView, reflectDir), 0.0), material.shininess);
+	vec3 specular = light.specular * (spec * material.specular);
 
-	vec3 result = (diffuseLight + specularLight + ambientLight) * objectColor;
+	vec3 result = diffuse + specular + ambient;
 	color = vec4(result, 1.0f);
 }
