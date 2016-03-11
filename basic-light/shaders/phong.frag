@@ -16,6 +16,9 @@ void main()
 	// diffuse and specular intensity are affected by the amount of light they get based on how
 	// far they are from a light source (inverse square of distance)
 	float distToLight = length(LightPos - FragPos);
+
+	// this is not the correct equation for light decay but it is close
+	// see light-casters sample for the proper way
 	float distIntensityDecay = 1.0f / pow(distToLight, 2);
 
 	float ambientStrength = 0.05f;
