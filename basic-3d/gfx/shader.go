@@ -63,8 +63,9 @@ func NewProgram(shaders ...*Shader) (*Program, error) {
 func NewShader(src string, sType uint32) (*Shader, error) {
 
 	handle := gl.CreateShader(sType)
-	glSrc := gl.Str(src + "\x00")
-	gl.ShaderSource(handle, 1, &glSrc, nil)
+	glSrcs, freeFn := gl.Strs(src + "\x00")
+	gl.ShaderSource(handle, 1, glSrcs, nil)
+	freeFn()
 	gl.CompileShader(handle)
 	err := getGlError(handle, gl.COMPILE_STATUS, gl.GetShaderiv, gl.GetShaderInfoLog,
 		"SHADER::COMPILE_FAILURE::")
