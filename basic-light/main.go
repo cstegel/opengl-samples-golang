@@ -14,9 +14,9 @@ import (
 	"github.com/go-gl/glfw/v3.1/glfw"
 	"github.com/go-gl/mathgl/mgl32"
 
-	"github.com/opengl-samples-golang/basic-light/gfx"
-	"github.com/opengl-samples-golang/basic-light/win"
-	"github.com/opengl-samples-golang/basic-light/cam"
+	"github.com/cstegel/opengl-samples-golang/basic-light/gfx"
+	"github.com/cstegel/opengl-samples-golang/basic-light/win"
+	"github.com/cstegel/opengl-samples-golang/basic-light/cam"
 )
 
 // vertices to draw 6 faces of a cube
@@ -89,18 +89,20 @@ func main() {
 	}
 	defer glfw.Terminate()
 
+	log.Println(glfw.GetVersionString())
+
 	glfw.WindowHint(glfw.Resizable, glfw.False)
 	glfw.WindowHint(glfw.ContextVersionMajor, 4)
 	glfw.WindowHint(glfw.ContextVersionMinor, 1)
 	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
 	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
 
+	window := win.NewWindow(1280, 720, "basic light")
+
 	// Initialize Glow (go function bindings)
 	if err := gl.Init(); err != nil {
 		panic(err)
 	}
-
-	window := win.NewWindow(1280, 720, "basic light")
 
 	err := programLoop(window)
 	if err != nil {

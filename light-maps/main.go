@@ -15,9 +15,9 @@ import (
 	"github.com/go-gl/glfw/v3.1/glfw"
 	"github.com/go-gl/mathgl/mgl32"
 
-	"github.com/opengl-samples-golang/light-maps/gfx"
-	"github.com/opengl-samples-golang/light-maps/win"
-	"github.com/opengl-samples-golang/light-maps/cam"
+	"github.com/cstegel/opengl-samples-golang/light-maps/gfx"
+	"github.com/cstegel/opengl-samples-golang/light-maps/win"
+	"github.com/cstegel/opengl-samples-golang/light-maps/cam"
 )
 
 // vertices to draw 6 faces of a cube
@@ -96,12 +96,12 @@ func main() {
 	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
 	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
 
+	window := win.NewWindow(1280, 720, "Lighting maps")
+
 	// Initialize Glow (go function bindings)
 	if err := gl.Init(); err != nil {
 		panic(err)
 	}
-
-	window := win.NewWindow(1280, 720, "Lighting maps")
 
 	err := programLoop(window)
 	if err != nil {

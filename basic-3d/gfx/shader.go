@@ -64,8 +64,8 @@ func NewShader(src string, sType uint32) (*Shader, error) {
 
 	handle := gl.CreateShader(sType)
 	glSrcs, freeFn := gl.Strs(src + "\x00")
+	defer freeFn()
 	gl.ShaderSource(handle, 1, glSrcs, nil)
-	freeFn()
 	gl.CompileShader(handle)
 	err := getGlError(handle, gl.COMPILE_STATUS, gl.GetShaderiv, gl.GetShaderInfoLog,
 		"SHADER::COMPILE_FAILURE::")
@@ -81,8 +81,9 @@ func NewShaderFromFile(file string, sType uint32) (*Shader, error) {
 		return nil, err
 	}
 	handle := gl.CreateShader(sType)
-	glSrc := gl.Str(string(src) + "\x00")
-	gl.ShaderSource(handle, 1, &glSrc, nil)
+	glSrc, freeFn := gl.Strs(string(src) + "\x00")
+	defer freeFn()
+	gl.ShaderSource(handle, 1, glSrc, nil)
 	gl.CompileShader(handle)
 	err = getGlError(handle, gl.COMPILE_STATUS, gl.GetShaderiv, gl.GetShaderInfoLog,
 	                  "SHADER::COMPILE_FAILURE::" + file)
