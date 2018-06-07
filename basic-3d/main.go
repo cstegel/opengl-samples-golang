@@ -14,7 +14,7 @@ import (
 	"github.com/go-gl/glfw/v3.1/glfw"
 	"github.com/go-gl/mathgl/mgl32"
 
-	"github.com/opengl-samples-golang/basic-3d/gfx"
+	"github.com/cstegel/opengl-samples-golang/basic-3d/gfx"
 )
 
 const windowWidth = 800
@@ -36,7 +36,7 @@ func main() {
 	glfw.WindowHint(glfw.ContextVersionMinor, 1)
 	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
 	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
-	window, err := glfw.CreateWindow(windowWidth, windowHeight, "basic shaders", nil, nil)
+	window, err := glfw.CreateWindow(windowWidth, windowHeight, "basic 3d", nil, nil)
 	if err != nil {
 		panic(err)
 	}

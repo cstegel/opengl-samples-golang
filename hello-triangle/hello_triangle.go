@@ -96,20 +96,22 @@ func checkProgramLinkErrors(program uint32) {
 }
 
 func compileShaders() []uint32 {
-
 	// create the vertex shader
 	vertexShader := gl.CreateShader(gl.VERTEX_SHADER)
-	shaderSourceChars := gl.Str(vertexShaderSource + "\x00")
-	gl.ShaderSource(vertexShader, 1, &shaderSourceChars, nil)
+	shaderSourceChars, freeVertexShaderFunc := gl.Strs(vertexShaderSource)
+	gl.ShaderSource(vertexShader, 1, shaderSourceChars, nil)
 	gl.CompileShader(vertexShader)
 	checkShaderCompileErrors(vertexShader)
 
 	// create the fragment shader
 	fragmentShader := gl.CreateShader(gl.FRAGMENT_SHADER)
-	shaderSourceChars = gl.Str(fragmentShaderSource + "\x00")
-	gl.ShaderSource(fragmentShader, 1, &shaderSourceChars, nil)
+	shaderSourceChars, freeFragmentShaderFunc := gl.Strs(fragmentShaderSource)
+	gl.ShaderSource(fragmentShader, 1, shaderSourceChars, nil)
 	gl.CompileShader(fragmentShader)
 	checkShaderCompileErrors(fragmentShader)
+
+	defer freeFragmentShaderFunc()
+	defer freeVertexShaderFunc()
 
 	return []uint32{vertexShader, fragmentShader}
 }

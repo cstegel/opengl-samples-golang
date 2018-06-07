@@ -14,7 +14,7 @@ import (
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.1/glfw"
 
-	"github.com/opengl-samples-golang/basic-textures/gfx"
+	"github.com/cstegel/opengl-samples-golang/basic-textures/gfx"
 )
 
 const windowWidth = 800
@@ -36,7 +36,7 @@ func main() {
 	glfw.WindowHint(glfw.ContextVersionMinor, 1)
 	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
 	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
-	window, err := glfw.CreateWindow(windowWidth, windowHeight, "basic shaders", nil, nil)
+	window, err := glfw.CreateWindow(windowWidth, windowHeight, "basic textures", nil, nil)
 	if err != nil {
 		panic(err)
 	}

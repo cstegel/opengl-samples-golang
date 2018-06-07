@@ -108,8 +108,9 @@ func checkProgramLinkErrors(program uint32) {
 
 func compileShader(shaderCode string, shaderType uint32) uint32 {
 	shader := gl.CreateShader(shaderType)
-	shaderChars := gl.Str(shaderCode + "\x00")
-	gl.ShaderSource(shader, 1, &shaderChars, nil)
+	shaderChars, freeFn := gl.Strs(shaderCode + "\x00")
+	defer freeFn()
+	gl.ShaderSource(shader, 1, shaderChars, nil)
 	gl.CompileShader(shader)
 	checkShaderCompileErrors(shader)
 	return shader

@@ -6,7 +6,7 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/go-gl/mathgl/mgl64"
 
-	"github.com/opengl-samples-golang/basic-camera/win"
+	"github.com/cstegel/opengl-samples-golang/basic-camera/win"
 )
 
 type FpsCamera struct {
